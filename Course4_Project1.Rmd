@@ -1,0 +1,86 @@
+---
+title: "Course4_Project1"  
+output: html_document  
+---    
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+       
+#### Read the data from the downloaded file
+
+```{r readdata}
+activitydata<-read.csv('C:\\Code-Git\\Course4\\activity.csv')
+
+```
+   *** 
+####What is mean total number of steps taken per day?
+
+
+```{r historgram, echo=TRUE}
+stepsperday<-tapply(activitydata$steps,activitydata$date,sum,na.rm=TRUE)
+stepsperday<-stepsperday[!is.na(stepsperday)]
+hist(stepsperday,main="Steps per day",col="grey",xlab="steps")
+```
+
+  
+####Mean and Median of the total number of steps taken per day
+```{r Q1, echo=TRUE}
+mn<-round(mean(stepsperday),digits=2)
+md<-median(stepsperday)
+```
+  
+Mean: `r mn  `  
+Median: `r md`  
+ 
+ *** 
+####What is the average daily activity pattern?
+
+```{r Q2, echo=TRUE}
+avgsteps <- tapply(activitydata$steps, activitydata$interval, mean, na.rm=TRUE, simplify=T)
+avgsteps <- data.frame(interval=as.integer(names(avgsteps)), value=avgsteps)
+plot(avgsteps$interval,avgsteps$value,type="l",xlab="5-minute interval",ylab="Average across all the days")
+Inteval_maxvalue<-avgsteps[avgsteps$value==max(avgsteps$value),1]
+abline(v=Inteval_maxvalue,col="red",lwd=2)
+
+```
+
+###### Interval with maximum value = `r Inteval_maxvalue` 
+ *** 
+  
+#### Imputing missing values  
+```{r Q3, echo=TRUE}
+NAsteps<-is.na(activitydata$steps)
+imputevalue<-tapply(activitydata$steps,activitydata$interval,mean,na.rm=TRUE)
+activitydata_modified<-activitydata
+activitydata_modified$steps[NAsteps]<-imputevalue[as.character(activitydata_modified$interval[NAsteps])]
+activtydata_impute<-tapply(activitydata_modified$steps,activitydata_modified$date,sum,na.rm=TRUE)
+hist(activtydata_impute,main="Steps per day (missing values imputed)",col="grey",xlab="steps")
+```
+
+
+####Mean and Median of the total number of steps (imputed) taken per day
+```{r Q3b, echo=TRUE}
+mn1<-mean(activtydata_impute)
+md1<-median(activtydata_impute)
+```
+
+  
+Mean: `r mn1  `  
+Median: `r md1`   
+
+ *** 
+
+#### Are there differences in activity patterns between weekdays and weekends?
+
+```{r Q3c, echo=TRUE}
+activitydata_modified$day<-as.POSIXct(as.character(activitydata_modified$date),format="%Y-%m-%d")
+activitydata_modified$day<-weekdays(activitydata_modified$day)
+activitydata_modified$IsweekDay<-ifelse(activitydata_modified$day== "Saturday" | activitydata_modified$day== "Sunday", "weekend", "weekday")
+activitydata_modified$IsweekDay<-as.factor(activitydata_modified$IsweekDay)
+activitydata_modified_avg<- aggregate(steps ~ interval + IsweekDay, data=activitydata_modified, mean)
+library(ggplot2)
+qplot(interval,steps,data = activitydata_modified_avg, geom=c("line"),xlab = "Interval", ylab = "# of steps") + facet_wrap(~ IsweekDay, ncol = 1)
+
+```
+
